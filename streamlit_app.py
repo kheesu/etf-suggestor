@@ -1,56 +1,37 @@
 import streamlit as st
 from openai import OpenAI
+import numpy as np
+import pandas as pd
+import suggest
+pd.options.mode.chained_assignment = None
 
 # Show title and description.
-st.title("💬 Chatbot")
+st.title("ETF 추천 시스템")
 st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
+    "아래의 양식을 입력하면 당신에게 맞춤형 ETF를 소개해 드립니다.\n"
+    "당신에게 아래의 특징이 얼마나 들어맞는지 생각하고 0에서 100 사이의 중요도를 입력해 주세요."
 )
+st.subheader('안정형')
+stability = st.slider('당신은 하루에도 10%씩 오르고 내리는 종목을 가지고 버틸수 있다면 낮게, 안정적인 투자를 원한다면 높게 설정해 주세요.', 0, 100, 50)
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+st.subheader('성장형')
+growth = st.slider('앞으로의 ETF의 성장에 지난 1년간의 수익률이 중요하다고 생각하면 높게 설정해 주세요', 0, 100, 50)
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+st.subheader('배당형')
+dividend = st.slider('무엇보다 꾸준하게 나오는 배당금을 많이 받고 싶다면 높게 설정해 주세요.', 0, 100, 50)
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+st.subheader('유동형')
+liquidity = st.slider('사람이 많이 찾는 이유가 있다고 생각하고 거래량이 많은 ETF를 선호하면 높게 설정해 주세요.', 0, 100, 50)
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+if st.button('추천받기!', type='primary'):
+    suggest.weight = {
+        'stability': stability/100,
+        'growth': growth/100,
+        'dividend': dividend/100,
+        'liquidity': liquidity/100
+    }
+    with st.spinner('고객님에게 알맞는 ETF를 찾는 중...'):
+        df = suggest.etf()
+    st.balloons()
+    st.write(df.head(10))
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
-
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
-
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
