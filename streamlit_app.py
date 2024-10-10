@@ -6,7 +6,7 @@ import suggest
 pd.options.mode.chained_assignment = None
 
 # Show title and description.
-st.title("ETF 추천 시스템")
+st.title("계란 판별사")
 st.write(
     "아래의 양식을 입력하면 당신에게 맞춤형 ETF를 소개해 드립니다.\n"
     "당신에게 아래의 특징이 얼마나 들어맞는지 생각하고 0에서 100 사이의 중요도를 입력해 주세요."
